@@ -16,7 +16,7 @@ A compact progress bar card for Home Assistant, designed to sit naturally next t
 
 This card grew out of [Bar Card](https://github.com/custom-cards/bar-card) (`custom:bar-card`), the well-known bar card for Home Assistant. Bar Card does not offer a Mushroom-style layout. To make it fit a Mushroom dashboard, I used Bar Card with a few kilobytes of `card_mod` CSS and Jinja on every card ([shared on the community forum](https://community.home-assistant.io/t/lovelace-bar-card/87503/864)).
 
-Mushroom Bar Card turns that styling into a standalone card. It gives the same look in a handful of YAML lines, without `card_mod` or other dependencies. It is a new implementation and does not contain Bar Card code. Many thanks to the Bar Card authors for the original idea.
+Mushroom Bar Card turns that styling into a standalone card. It gives the same look in a handful of YAML lines, without `card_mod` or other dependencies. It is a new implementation and does not contain Bar Card code. Many thanks to the Bar Card authors for the original idea. The card is introduced in [this community forum topic](https://community.home-assistant.io/t/mushroom-bar-card-compact-mushroom-style-progress-bar-with-severity-colours/1032744).
 
 ## Features
 
@@ -145,6 +145,11 @@ severity:
   - { from: 350, color: red }
 ```
 </details>
+
+## Support
+
+- Questions, ideas and showing off your dashboards: [community forum topic](https://community.home-assistant.io/t/mushroom-bar-card-compact-mushroom-style-progress-bar-with-severity-colours/1032744)
+- Bugs and feature requests: [GitHub issues](https://github.com/arnocl/mushroom-bar-card/issues)
 
 ## License
 
