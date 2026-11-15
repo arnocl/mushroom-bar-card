@@ -23,6 +23,7 @@ Mushroom Bar Card turns that styling into a standalone card. It gives the same l
 - Mushroom-style layout: icon, name, value and bar in a single row (one grid row in sections views)
 - Severity colours applied to icon **and** bar, with thresholds in any order (works for "low is bad" too, such as fuel or battery levels)
 - Optional target zone on the bar
+- Optional badge on the icon, driven by any entity or attribute (e.g. charging / discharging)
 - Greyed-out `N/A` state for unavailable or unknown entities
 - Tap, hold and double-tap actions
 - Visual editor for the basic options
@@ -74,6 +75,7 @@ severity:
 | `color` | string | `blue` | Colour used when no `severity` is set |
 | `severity` | list | – | Thresholds; see below |
 | `icon_background` | boolean | `false` | Tinted circle behind the icon |
+| `badge` | object | – | Small badge on the icon; see [Badge](#badge) |
 | `height` | number | `8` | Bar height in pixels |
 | `tap_action` | action | `more-info` | Standard [Home Assistant action](https://www.home-assistant.io/dashboards/actions/) |
 | `hold_action` | action | – | Standard Home Assistant action |
@@ -91,6 +93,54 @@ severity:
   - { from: 0, color: red }
   - { from: 10, color: orange }
   - { from: 20, color: green }
+```
+
+### Badge
+
+A small badge on the top-right of the icon, like on Mushroom cards. It can follow another entity or an attribute, so you can for example show whether a battery is charging.
+
+![Badge examples](https://raw.githubusercontent.com/arnocl/mushroom-bar-card/main/images/badge.png)
+
+| Option | Default | Description |
+|---|---|---|
+| `entity` | card entity | Entity whose state drives the badge |
+| `attribute` | – | Use this attribute instead of the state |
+| `icon` | – | Default badge icon; leave out to hide the badge when no condition matches |
+| `color` | severity colour | Default badge colour |
+| `conditions` | – | List of conditions; the first match wins |
+
+Each condition can have `state` (a value or a list of values), `above` and/or `below`, plus the `icon` and `color` to use. `hide: true` hides the badge for that condition.
+
+```yaml
+# Charging indicator from a binary sensor
+badge:
+  entity: binary_sensor.battery_charging
+  conditions:
+    - state: "on"
+      icon: mdi:flash
+      color: green
+```
+
+```yaml
+# Charging / discharging from a power sensor
+badge:
+  entity: sensor.battery_power
+  conditions:
+    - above: 0
+      icon: mdi:arrow-up
+      color: green
+    - below: 0
+      icon: mdi:arrow-down
+      color: orange
+```
+
+```yaml
+# From an attribute
+badge:
+  attribute: charging
+  conditions:
+    - state: "true"
+      icon: mdi:flash
 ```
 
 ### Colours
