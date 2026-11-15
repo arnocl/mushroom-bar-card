@@ -19,10 +19,18 @@
  *   - { from: 0,   color: green }
  *   - { from: 180, color: orange }
  *   - { from: 240, color: red }
+ * badge:                      # optional small badge on the icon
+ *   entity: binary_sensor.battery_charging   # default: the card entity
+ *   attribute: charging       # optional
+ *   icon: mdi:flash           # default badge (optional)
+ *   color: blue
+ *   conditions:               # optional; first match wins
+ *     - { state: "on", icon: mdi:flash, color: green }
+ *     - { below: 0, icon: mdi:arrow-down, color: orange }
  * tap_action / hold_action / double_tap_action  (default tap: more-info)
  */
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 
 const NAMED = {
   green: "76,175,80",
@@ -74,6 +82,7 @@ class MushroomBarCard extends HTMLElement {
         },
         { name: "icon_background", selector: { boolean: {} } },
         { name: "severity", selector: { object: {} } },
+        { name: "badge", selector: { object: {} } },
         { name: "tap_action", selector: { ui_action: {} } },
         { name: "hold_action", selector: { ui_action: {} } },
       ],
@@ -81,6 +90,7 @@ class MushroomBarCard extends HTMLElement {
         entity: "Entity", name: "Name", icon: "Icon", min: "Minimum", max: "Maximum",
         target: "Target", unit: "Unit", decimals: "Decimals", color: "Colour (no severity)",
         icon_background: "Icon background", severity: "Severity (list of from + color)",
+        badge: "Badge (entity, icon, color, conditions)",
         tap_action: "Tap action", hold_action: "Hold action",
       }[s.name]),
     };
@@ -110,7 +120,10 @@ class MushroomBarCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     const s = hass.states[this._config?.entity];
-    const key = s ? `${s.state}|${s.attributes.friendly_name}|${s.attributes.icon}|${hass.themes?.darkMode}` : "missing";
+    const b = this._config?.badge;
+    const bs = b ? hass.states[b.entity || this._config.entity] : undefined;
+    const bkey = bs ? `${bs.state}|${b.attribute ? bs.attributes[b.attribute] : ""}` : "";
+    const key = s ? `${s.state}|${s.attributes.friendly_name}|${s.attributes.icon}|${hass.themes?.darkMode}|${bkey}` : "missing";
     if (key === this._lastKey) return;
     this._lastKey = key;
     this._render();
@@ -139,7 +152,17 @@ class MushroomBarCard extends HTMLElement {
           color: var(--mbc-color);
           background-color: color-mix(in srgb, var(--mbc-color) var(--mbc-icon-bg, 0%), transparent);
           --mdc-icon-size: 24px;
+          position: relative;
         }
+        .badge {
+          position: absolute; top: -3px; right: -3px;
+          width: 16px; height: 16px; border-radius: 50%;
+          display: none; align-items: center; justify-content: center;
+          background-color: var(--mbc-badge-color);
+          color: var(--card-background-color, #fff);
+          --mdc-icon-size: 12px;
+        }
+        .badge ha-icon { display: flex; }
         .info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
         .name {
           font-size: 14px; font-weight: 500; line-height: 20px; letter-spacing: 0.1px;
@@ -162,7 +185,7 @@ class MushroomBarCard extends HTMLElement {
       </style>
       <ha-card>
         <div class="container">
-          <div class="icon"><ha-state-icon></ha-state-icon></div>
+          <div class="icon"><ha-state-icon></ha-state-icon><div class="badge"><ha-icon></ha-icon></div></div>
           <div class="info">
             <div class="name"></div>
             <div class="row"><span class="value"></span>
@@ -178,6 +201,8 @@ class MushroomBarCard extends HTMLElement {
       value: root.querySelector(".value"),
       fill: root.querySelector(".fill"),
       target: root.querySelector(".target"),
+      badge: root.querySelector(".badge"),
+      badgeIcon: root.querySelector(".badge ha-icon"),
     };
     this._bindActions(this._el.card);
   }
@@ -207,6 +232,30 @@ class MushroomBarCard extends HTMLElement {
     return `${v.toLocaleString(lang, opts)}${unit}`;
   }
 
+  /** Resolves the badge for the current state: { icon, color } or null (hidden). */
+  _badgeFor() {
+    const b = this._config.badge;
+    if (!b || typeof b !== "object") return null;
+    const so = this._hass.states[b.entity || this._config.entity];
+    if (!so) return null;
+    const raw = b.attribute ? so.attributes[b.attribute] : so.state;
+    const str = String(raw);
+    const num = parseFloat(raw);
+    for (const c of Array.isArray(b.conditions) ? b.conditions : []) {
+      if (!c || typeof c !== "object") continue;
+      if (c.state !== undefined) {
+        const list = (Array.isArray(c.state) ? c.state : [c.state]).map(String);
+        if (!list.includes(str)) continue;
+      }
+      if (c.above !== undefined && !(num > Number(c.above))) continue;
+      if (c.below !== undefined && !(num < Number(c.below))) continue;
+      if (c.hide) return null;
+      const icon = c.icon || b.icon;
+      return icon ? { icon, color: c.color || b.color } : null;
+    }
+    return b.icon ? { icon: b.icon, color: b.color } : null;
+  }
+
   _render() {
     if (!this._hass || !this._config || !this._el) return;
     const c = this._config;
@@ -231,6 +280,13 @@ class MushroomBarCard extends HTMLElement {
 
     el.icon.hass = this._hass;
     el.icon.stateObj = stateObj;
+
+    const badge = this._badgeFor();
+    el.badge.style.display = badge ? "flex" : "none";
+    if (badge) {
+      el.badgeIcon.icon = badge.icon;
+      el.badge.style.setProperty("--mbc-badge-color", badge.color ? cssColor(badge.color) : "var(--mbc-color)");
+    }
     if (c.icon) el.icon.icon = c.icon;
 
     el.name.textContent = c.name || stateObj.attributes.friendly_name || c.entity;
