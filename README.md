@@ -37,8 +37,6 @@ Mushroom Bar Card turns that styling into a standalone card. It gives the same l
 2. Search for **Mushroom Bar Card** and install it.
 3. Refresh your browser.
 
-Until the card is in the default store, add it as a custom repository first: use **Add from link** (Marketplace) or **Custom repositories** (HACS) with `https://github.com/arnocl/mushroom-bar-card` and category **Dashboard**.
-
 ### Manual
 
 1. Download `mushroom-bar-card.js` from the [latest release](https://github.com/arnocl/mushroom-bar-card/releases).
